@@ -141,7 +141,7 @@ ir/0002.png vi/0002.png
 
 The pretrained fusion weight can be downloaded from:
 
-> **[Download pretrained weights](WEIGHT_DOWNLOAD_LINK)**
+> **[Download pretrained weights](https://github.com/YichenLiu156/MARC_Fusion/releases/tag/V1.0.0)**
 
 Place the downloaded file at:
 
@@ -396,15 +396,6 @@ validation/
     ├── qir/
     └── qvis/
 ```
-
-## Notes
-
-- Keep the network configuration consistent across material training, fusion training, and testing.
-- Avoid absolute local paths in released JSON files.
-- Do not commit datasets, checkpoints, or generated outputs directly to the source-code repository.
-- Large pretrained weights should be distributed through GitHub Releases, OSF, Zenodo, or another model-hosting service.
-- If CUDA out-of-memory errors occur, reduce `batch_size` or `train_patch_size`.
-- If mixed-precision execution causes a dtype error in the wavelet operations, set `"use_amp": false`.
 
 ## Citation
 
