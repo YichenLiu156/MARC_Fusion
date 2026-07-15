@@ -1,0 +1,60 @@
+{
+  "network_config_path": "../params_marc/default/fusion_network.json",
+
+  "train_ir_dir": "../datasets/roadsence_marc/ir",
+  "train_vis_dir": "../datasets/roadsence_marc/vis",
+  "train_list": "",
+
+
+
+
+  "num_workers": 4,
+
+  "lr": 0.00005,
+  "weight_decay": 0.0,
+  "material_epochs": 30,
+
+  "recon_weight": 1.0,
+  "grad_weight": 0.5,
+  "material_consistency_weight": 0.1,
+
+  "recon_loss_type": "l1",
+  "grad_loss_type": "l1",
+  "material_loss_type": "negative_patch_infonce",
+
+  "negative_temperature": 0.2,
+  "negative_symmetric": true,
+  "material_consistency_interval": 1,
+
+  "detach_negative_z": false,
+
+  "use_amp": false,
+  "grad_clip": 1.0,
+
+  "material_save_dir": "../train/marc/0511/checkpoints/material_stage",
+  "material_visual_dir": "../train/marc/0511/visuals/material_stage",
+  "material_loss_log_dir": "../train/marc/0511/logs/material_stage",
+
+  "log_interval": 20,
+  "save_interval": 1000,
+  "visualize_interval": 20,
+  "visualize_max_items": 2,
+
+  "resume_material_weight_path": "../train/marc/0511_1/checkpoints/material_stage/material_epoch_020.pth",
+  "zr_ze_decorrelation_weight": 0.005,
+
+  "wavelet_weight": 0.1,
+  "wavelet_low_weight": 0.1,
+  "wavelet_high_weight": 0.08,
+  "wavelet_loss_type": "l1",
+  "wavelet_mode": "zero",
+  "use_random_crop": true,
+  "train_patch_size": 160,
+  "neg_patch_size": 128,
+
+  "train_height": null,
+  "train_width": null,
+
+  "batch_size": 1,
+  "seed": 2026
+}

@@ -1,0 +1,59 @@
+{
+  "network_config_path": "../params_marc/default/fusion_network.json",
+
+  "train_ir_dir": "D:\\Pycharm\\PycharmProjects\\MARFusion\\MARCFusion\\MARCFusion\\datasets\\train_data\\ir",
+  "train_vis_dir": "D:\\Pycharm\\PycharmProjects\\MARFusion\\MARCFusion\\MARCFusion\\datasets\\train_data\\vi",
+  "train_list": "",
+
+  "use_random_crop": true,
+  "train_patch_size": 128,
+  "train_height": null,
+  "train_width": null,
+
+  "batch_size": 2,
+  "num_workers": 4,
+
+  "pretrained_material_weight_path": "../train/marc/0511_wavelet/checkpoints/material_stage/material_epoch_030.pth",
+  "resume_fusion_weight_path": "../train/marc/0511_fusion/checkpoints/fusion_stage/fusion_epoch_020.pth",
+
+  "fusion_epochs": 50,
+  "lr": 0.00002,
+  "weight_decay": 0.0,
+
+  "freeze_material_in_fusion": false,
+
+  "fusion_intensity_weight": 0.6,
+  "fusion_gradient_weight": 1.5,
+  "fusion_ssim_weight": 0.05,
+  "fusion_reconstruction_weight": 0.03,
+  "fusion_tv_weight": 0.0,
+
+  "fusion_saturation_weight": 0.01,
+  "fusion_saturation_upper": 0.95,
+
+  "fusion_intensity_mode": "mixed",
+  "fusion_intensity_alpha": 0.6,
+  "fusion_gradient_mode": "max",
+  "fusion_image_loss_type": "l1",
+
+  "output_high_scale": 0.8,
+  "limit_output_high": true,
+  "use_output_bn": false,
+
+  "use_amp": false,
+  "grad_clip": 1.0,
+
+  "fusion_return_aux": false,
+  "return_reconstruction": true,
+
+  "fusion_save_dir": "../train/marc/0511_fusion_sat/checkpoints/fusion_stage",
+  "fusion_visual_dir": "../train/marc/0511_fusion_sat/visuals/fusion_stage",
+  "fusion_loss_log_dir": "../train/marc/0511_fusion_sat/logs/fusion_stage",
+
+  "log_interval": 20,
+  "save_interval": 1000,
+  "visualize_interval": 90,
+  "visualize_max_items": 2,
+
+  "seed": 2026
+}

@@ -1,0 +1,31 @@
+{
+  "network_config_path": "../params/default/fusion_network.json",
+
+  "test_ir_dir": "../datasets/ir",
+  "test_vis_dir": "../datasets/vi",
+  "test_list": "",
+
+  "fusion_weight_path": "../weights/fusion_weights.pth",
+
+
+
+  "test_fused_save_dir": "../validation/marc_fusion/fused",
+  "test_visual_save_dir": "../validation/marc_fusion/visual",
+
+  "test_save_feature_maps": true,
+  "test_save_feature_npy": false,
+  "test_print_fused_stats": false,
+  "test_print_feature_stats": false,
+  "test_print_stats_samples": 20,
+  "test_patch_size": 128,
+  "test_stride": 64,
+  "test_tile_border": 32,
+  "test_use_hanning": true,
+  "test_material_intervention": "none",
+
+  "test_zr_save_dir": "../validation/marc_fusion/zr",
+  "test_ze_save_dir": "../validation/marc_fusion/ze",
+  "test_c_save_dir": "../validation/marc_fusion/c",
+  "test_qir_save_dir": "../validation/marc_fusion/qir",
+  "test_qvis_save_dir": "../validation/marc_fusion/qvis"
+}
