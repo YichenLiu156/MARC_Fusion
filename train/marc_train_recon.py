@@ -1168,7 +1168,7 @@ def train_material_stage(args):
 
 
 if __name__ == "__main__":
-    json_path = "../params_marc/default/train_material.json"
+    json_path = "../params/default/train_material.json"
 
     args = get_arg(json_path)
 

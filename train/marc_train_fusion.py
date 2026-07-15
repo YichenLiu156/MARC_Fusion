@@ -1293,7 +1293,7 @@ def train_fusion_stage(args):
 
 
 if __name__ == "__main__":
-    json_path = "../params_marc/default/train_fusion.json"
+    json_path = "../params/default/train_fusion.json"
 
     args = get_arg(json_path)
 
