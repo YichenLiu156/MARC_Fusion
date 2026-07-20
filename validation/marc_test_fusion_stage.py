@@ -19,18 +19,7 @@ FEATURE_KEYS = ["zr", "ze", "c", "qir", "qvis"]
 
 
 class GetArgs:
-    """
-    支持测试配置 + 网络配置合并。
 
-    fusion_test.json 中可以写：
-        "network_config_path": "../params_marc/default/fusion_network.json"
-
-    最终 args 同时包含：
-        测试参数 + 网络结构参数
-
-    如果两个 json 中有同名字段：
-        fusion_test.json 中的字段优先级更高。
-    """
 
     def __init__(self, json_path: str):
         with open(json_path, "r", encoding="utf-8") as f:
