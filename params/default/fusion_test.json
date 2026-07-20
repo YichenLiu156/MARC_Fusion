@@ -5,7 +5,7 @@
   "test_vis_dir": "../datasets/vi",
   "test_list": "",
 
-  "fusion_weight_path": "../weights/fusion_weights.pth",
+  "fusion_weight_path": "../weights/weights_marc_fusion_best.pth",
 
 
 

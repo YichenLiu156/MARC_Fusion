@@ -213,23 +213,31 @@ def load_model_weight(
     model: torch.nn.Module,
     ckpt_path: str,
     device: torch.device,
-    strict: bool = False,
+    strict: bool = True,
 ):
-    """
-    加载融合阶段权重。
-
-    支持两种格式：
-        1. {"model": state_dict, ...}
-        2. 直接 state_dict
-    """
-    ckpt = torch.load(ckpt_path, map_location=device)
+    try:
+        ckpt = torch.load(
+            ckpt_path,
+            map_location="cpu",
+            weights_only=True,
+        )
+    except TypeError:
+        ckpt = torch.load(
+            ckpt_path,
+            map_location="cpu",
+        )
 
     if isinstance(ckpt, dict) and "model" in ckpt:
         state_dict = ckpt["model"]
     else:
         state_dict = ckpt
 
-    missing, unexpected = model.load_state_dict(state_dict, strict=strict)
+    missing, unexpected = model.load_state_dict(
+        state_dict,
+        strict=strict,
+    )
+
+    model.to(device)
 
     print(f"Loaded weight from: {ckpt_path}")
     print(f"Missing keys: {len(missing)}")
@@ -932,7 +940,7 @@ def test_fusion_stage(args):
         model=model,
         ckpt_path=fusion_weight_path,
         device=device,
-        strict=False,
+        strict=True,
     )
 
     if hasattr(model, "set_train_stage"):
