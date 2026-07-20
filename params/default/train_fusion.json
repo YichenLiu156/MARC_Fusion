@@ -20,7 +20,7 @@
   "lr": 0.00002,
   "weight_decay": 0.0,
 
-  "freeze_material_in_fusion": false,
+  "freeze_material_in_fusion": true,
 
   "fusion_intensity_weight": 0.6,
   "fusion_gradient_weight": 1.5,
