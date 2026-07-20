@@ -1,7 +1,5 @@
 """Losses used by the two-stage MARC-Fusion training scheme.
 
-This file keeps only the objectives described in the paper:
-
 Material pretraining:
     L_mat = lambda_rec * L_rec
           + lambda_mg  * L_mgrad
@@ -70,12 +68,7 @@ def _require_same_shape(*tensors: torch.Tensor) -> None:
 
 
 def _material_representation(outputs: Dict[str, torch.Tensor]) -> torch.Tensor:
-    """Return the projected material representation when it is exposed.
 
-    Equation (13) applies a projection head P before cosine similarity. Model
-    implementations use different output names, so projected outputs are
-    preferred and z_m is accepted as a compatibility fallback.
-    """
     for key in ("p_m", "proj_z_m", "projected_z_m", "z_m"):
         value = outputs.get(key)
         if isinstance(value, torch.Tensor):
@@ -186,7 +179,6 @@ class StabilityContrastiveLoss(nn.Module):
 
 
 class MaterialStageLoss(nn.Module):
-    """Paper-only material pretraining objective (equation 19)."""
 
     def __init__(
         self,
@@ -307,7 +299,6 @@ class FusionGradientLoss(nn.Module):
 
 
 class FusionStageLoss(nn.Module):
-    """Paper-only fusion objective (equation 20)."""
 
     def __init__(
         self,
