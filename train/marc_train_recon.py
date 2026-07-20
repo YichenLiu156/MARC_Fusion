@@ -64,17 +64,7 @@ def inspect_tensor(name, x):
 
 
 def inspect_high_feature(name, high):
-    """
-    检查 high-frequency feature。
 
-    high 一般是：
-        [B, 3C, H, W]
-
-    这里会整体检查 high，并且按 3 个子带切开：
-        high_1 / high_2 / high_3
-
-    它们通常对应 LH / HL / HH，但具体顺序取决于你的 OutputLayers / DWT 代码。
-    """
     inspect_tensor(name, high)
 
     if high.dim() != 4:
@@ -194,19 +184,6 @@ def random_crop_pair(
     return ir_patch, vis_patch
 
 class PairedIRVISDataset(Dataset):
-    """
-    红外-可见光配准图像对数据集。
-
-    每次返回：
-        1. 当前样本 ir / vis；
-        2. 从另一张图像中裁剪得到的负样本 neg_ir_patch / neg_vis_patch。
-
-    负样本满足：
-        neg_idx != idx
-
-    这样可以避免从当前图像内部随机取负样本，
-    减少同一图像内大面积相同材质区域被错误当成负样本的问题。
-    """
 
     IMG_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
 
