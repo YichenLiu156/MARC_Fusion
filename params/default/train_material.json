@@ -1,8 +1,8 @@
 {
   "network_config_path": "../params_marc/default/fusion_network.json",
 
-  "train_ir_dir": "../datasets/roadsence_marc/ir",
-  "train_vis_dir": "../datasets/roadsence_marc/vis",
+  "train_ir_dir": "../datasets/train_data/ir",
+  "train_vis_dir": "../datasets/train_data/vis",
   "train_list": "",
 
   "use_random_crop": true,
