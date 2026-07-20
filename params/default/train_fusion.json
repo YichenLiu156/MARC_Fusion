@@ -34,6 +34,7 @@
   "grad_clip": 1.0,
 
   "fusion_return_aux": false,
+
   "return_reconstruction": false,
 
   "fusion_save_dir": "../train/marc/fusion_stage/checkpoints",
