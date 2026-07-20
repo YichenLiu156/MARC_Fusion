@@ -9,8 +9,6 @@ Fusion training:
     L_fus = lambda_int * L_int
           + lambda_fg  * L_fgrad
 
-The paper does not specify the exact pixel norm in the main text. L1 is used
-here, matching the default behavior of the original implementation.
 """
 
 from typing import Any, Dict, Optional, Sequence, Tuple
@@ -30,7 +28,7 @@ def get_arg(args: Any, name: str, default: Any) -> Any:
 
 
 def get_first_arg(args: Any, names: Sequence[str], default: Any) -> Any:
-    """Read the first available option name (keeps old configs usable)."""
+    """Read the first available option from a sequence of equivalent names."""
     sentinel = object()
     for name in names:
         value = get_arg(args, name, sentinel)
@@ -92,10 +90,6 @@ def _normalized_vector(z: torch.Tensor) -> torch.Tensor:
         )
     return F.normalize(z, dim=1)
 
-
-# -----------------------------------------------------------------------------
-# Material pretraining losses: equations (18)-(19)
-# -----------------------------------------------------------------------------
 
 
 class ImageReconstructionLoss(nn.Module):
@@ -255,9 +249,6 @@ def build_material_stage_loss(args: Any = None) -> MaterialStageLoss:
     )
 
 
-# -----------------------------------------------------------------------------
-# Fusion losses: equation (20)
-# -----------------------------------------------------------------------------
 
 
 class FusionIntensityLoss(nn.Module):
