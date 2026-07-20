@@ -13,8 +13,8 @@
   "batch_size": 2,
   "num_workers": 4,
 
-  "pretrained_material_weight_path": "../train/marc/0511_wavelet/checkpoints/material_stage/material_epoch_030.pth",
-  "resume_fusion_weight_path": "../train/marc/0511_fusion/checkpoints/fusion_stage/fusion_epoch_020.pth",
+  "pretrained_material_weight_path": "",
+  "resume_fusion_weight_path": "",
 
   "fusion_epochs": 50,
   "lr": 0.00002,

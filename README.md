@@ -1,8 +1,6 @@
 # MARC-Fusion
 
-This repository contains the PyTorch implementation associated with the paper:
-
-> **Material-aware Selective Fusion for Infrared-Visible Images**
+This repository contains an anonymized PyTorch implementation accompanying the submitted manuscript.
 
 MARC-Fusion learns material-related latent priors and uses them to guide frequency-decoupled infrared-visible image fusion. The training procedure contains two stages:
 
@@ -139,11 +137,11 @@ ir/0002.png vi/0002.png
 
 ## Pretrained Weights
 
-The pretrained fusion weight can be downloaded from:
+The anonymized pretrained fusion weight is available through the following OSF view-only page:
 
-> **[Download pretrained weights](https://github.com/YichenLiu156/MARC_Fusion/releases/tag/V1.0.0)**
+> **[Download anonymized pretrained weights](https://osf.io/ce3qx/overview?view_only=af5e6c68b6f546edb30b9b7282f2cfca)**
 
-Place the downloaded file at:
+Download the pure PyTorch `state_dict`, place it in the `weights/` directory, and rename it as follows when necessary:
 
 ```text
 weights/
@@ -158,13 +156,20 @@ The test configuration should contain:
 }
 ```
 
-The test code supports either of the following checkpoint formats:
+Load the released weight with:
 
 ```python
-{"model": model.state_dict()}
+state_dict = torch.load(
+    "./weights/fusion_weights.pth",
+    map_location="cpu",
+    weights_only=True,
+)
+
+model.load_state_dict(state_dict, strict=True)
+model.eval()
 ```
 
-or a directly saved `state_dict`.
+The released file contains only the model `state_dict`. It does not contain optimizer states, training paths, logs, or author information.
 
 ## Configuration
 
@@ -222,7 +227,7 @@ To resume material training, set:
 
 ```json
 {
-  "resume_material_weight_path": "./outputs/material/checkpoints/material_epoch_020.pth"
+  "resume_material_weight_path": "./outputs/material/checkpoints/material_epoch.pth"
 }
 ```
 
@@ -399,4 +404,4 @@ validation/
 
 ## Citation
 
-Citation information will be added after publication.
+Citation information is omitted during anonymous review and will be added after publication.
