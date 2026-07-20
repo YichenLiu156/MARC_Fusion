@@ -10,7 +10,7 @@
   "train_height": null,
   "train_width": null,
 
-  "batch_size": 2,
+  "batch_size": 4,
   "num_workers": 4,
 
   "pretrained_material_weight_path": "",

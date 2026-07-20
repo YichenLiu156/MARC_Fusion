@@ -11,7 +11,7 @@
   "train_height": null,
   "train_width": null,
 
-  "batch_size": 1,
+  "batch_size": 8,
   "num_workers": 4,
 
   "material_epochs": 30,
