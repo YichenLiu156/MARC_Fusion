@@ -1,8 +1,8 @@
 {
   "network_config_path": "../params_marc/default/fusion_network.json",
 
-  "train_ir_dir": "D:\\Pycharm\\PycharmProjects\\MARFusion\\MARCFusion\\MARCFusion\\datasets\\train_data\\ir",
-  "train_vis_dir": "D:\\Pycharm\\PycharmProjects\\MARFusion\\MARCFusion\\MARCFusion\\datasets\\train_data\\vi",
+  "train_ir_dir": "../datasets/train_data/ir",
+  "train_vis_dir": "../datasets/train_data/vi",
   "train_list": "",
 
   "use_random_crop": true,
@@ -24,17 +24,7 @@
 
   "fusion_intensity_weight": 0.6,
   "fusion_gradient_weight": 1.5,
-  "fusion_ssim_weight": 0.05,
-  "fusion_reconstruction_weight": 0.03,
-  "fusion_tv_weight": 0.0,
-
-  "fusion_saturation_weight": 0.01,
-  "fusion_saturation_upper": 0.95,
-
-  "fusion_intensity_mode": "mixed",
-  "fusion_intensity_alpha": 0.6,
-  "fusion_gradient_mode": "max",
-  "fusion_image_loss_type": "l1",
+  "fusion_salient_weight": 0.6,
 
   "output_high_scale": 0.8,
   "limit_output_high": true,
@@ -44,11 +34,11 @@
   "grad_clip": 1.0,
 
   "fusion_return_aux": false,
-  "return_reconstruction": true,
+  "return_reconstruction": false,
 
-  "fusion_save_dir": "../train/marc/0511_fusion_sat/checkpoints/fusion_stage",
-  "fusion_visual_dir": "../train/marc/0511_fusion_sat/visuals/fusion_stage",
-  "fusion_loss_log_dir": "../train/marc/0511_fusion_sat/logs/fusion_stage",
+  "fusion_save_dir": "../train/marc/fusion_stage/checkpoints",
+  "fusion_visual_dir": "../train/marc/fusion_stage/visuals",
+  "fusion_loss_log_dir": "../train/marc/fusion_stage/logs",
 
   "log_interval": 20,
   "save_interval": 1000,
