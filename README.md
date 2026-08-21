@@ -34,7 +34,7 @@ MARC-Fusion/
 │       ├── ir/
 │       └── vi/
 ├── weights/
-│   └── fusion_weights.pth
+│   └── marc_fusion_best.pth
 ├── train_material.py
 ├── train_fusion.py
 ├── test_fusion.py
@@ -137,15 +137,15 @@ ir/0002.png vi/0002.png
 
 ## Pretrained Weights
 
-The released MARC-Fusion weight is available from the GitHub release:
+The released MARC-Fusion weights used for testing and reproduction are available from the GitHub release:
 
-> **[MARC-Fusion V1.0.0 pretrained weights](https://github.com/YichenLiu156/MARC_Fusion/releases/tag/Weights)**
+> **[MARC-Fusion pretrained weights](https://github.com/YichenLiu156/MARC_Fusion/releases/tag/Weights)**
 
-Place the released PyTorch `state_dict` in the `weights/` directory and rename it when necessary:
+Download the released `.pth` file and place it in the `weights/` directory. The examples below use:
 
 ```text
 weights/
-└── fusion_weights.pth
+└── marc_fusion_best.pth
 ```
 
 The test configuration should contain:
@@ -156,20 +156,7 @@ The test configuration should contain:
 }
 ```
 
-Load the released weight with:
-
-```python
-state_dict = torch.load(
-    "./weights/marc_fusion_best.pth",
-    map_location="cpu",
-    weights_only=True,
-)
-
-model.load_state_dict(state_dict, strict=True)
-model.eval()
-```
-
-The released file is intended to contain the model `state_dict` only; optimizer states, local dataset paths, and training logs are not required for inference.
+The provided testing script loads the released weight from `fusion_weight_path`. For exact checkpoint portability, use the network configuration supplied with this repository and avoid silently overriding architecture or forward-affecting parameters in an experiment-specific test configuration.
 
 ## Configuration
 
@@ -328,7 +315,7 @@ To resume fusion training, set for example:
 }
 ```
 
-For paper-result reproduction, use the checkpoint corresponding to epoch 133 or the released V1.0.0 checkpoint supplied above.
+For paper-result reproduction, use the checkpoint corresponding to epoch 133 or the released checkpoint supplied above.
 
 ## Testing
 
@@ -352,7 +339,7 @@ A minimal test configuration is:
   "test_ir_dir": "./datasets/test/ir",
   "test_vis_dir": "./datasets/test/vi",
   "test_list": "",
-  "fusion_weight_path": "./weights/fusion_weights.pth",
+  "fusion_weight_path": "./weights/marc_fusion_best.pth",
 
   "test_fused_save_dir": "./validation/marc_fusion/fused",
   "test_visual_save_dir": "./validation/marc_fusion/visual",

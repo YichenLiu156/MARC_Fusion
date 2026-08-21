@@ -30,17 +30,4 @@ Then set the testing configuration to:
 }
 ```
 
-The released weight should be loaded as a PyTorch `state_dict`. For exact architecture matching, use strict loading:
 
-```python
-state_dict = torch.load(
-    "./weights/marc_fusion_best.pth",
-    map_location="cpu",
-    weights_only=True,
-)
-
-model.load_state_dict(state_dict, strict=True)
-model.eval()
-```
-
-Please use the network configuration provided with the repository when evaluating the released checkpoint.
