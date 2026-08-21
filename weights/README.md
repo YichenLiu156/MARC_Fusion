@@ -26,7 +26,7 @@ Then set the testing configuration to:
 
 ```json
 {
-  "fusion_weight_path": "./weights/fusion_weights.pth"
+  "fusion_weight_path": "./weights/weights_marc_fusion_best.pth"
 }
 ```
 
@@ -34,7 +34,7 @@ The released weight should be loaded as a PyTorch `state_dict`. For exact archit
 
 ```python
 state_dict = torch.load(
-    "./weights/fusion_weights.pth",
+    "./weights/weights_marc_fusion_best.pth",
     map_location="cpu",
     weights_only=True,
 )
