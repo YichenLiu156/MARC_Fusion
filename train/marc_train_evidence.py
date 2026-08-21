@@ -17,9 +17,11 @@ from torch.utils.data import Dataset, DataLoader
 from model.marc_fusion_net import MARCFusionNet
 from metric.marc_losses import build_material_stage_loss
 from utils.loss_visual import AverageMeter, tensor_to_float, save_loss_history_csv, save_loss_history_json ,plot_loss_curves
+from utils.get_args import GetArgs
 import matplotlib
 
 matplotlib.use("Agg")
+
 
 
 def get_arg(args, name: str, default: Any):
@@ -861,8 +863,8 @@ def train_material_stage(args):
     visualize_max_items = get_arg(args, "visualize_max_items", 2)
 
     material_loss_type = get_arg(args, "material_loss_type", "negative_patch_infonce")
-    material_weight = get_arg(args, "material_consistency_weight", 0.1)
-    material_interval = get_arg(args, "material_consistency_interval", 1)
+    material_weight = get_arg(args, "material_contrast_weight", 0.1)
+    material_interval = get_arg(args, "material_contrast_interval", 1)
 
     detach_negative_z = get_arg(args, "detach_negative_z", False)
 
@@ -1145,8 +1147,8 @@ def train_material_stage(args):
 
 
 if __name__ == "__main__":
-    json_path = "../params/default/train_material.json"
+    json_path = "../params/default/train_evidence.json"
 
-    args = get_arg(json_path)
+    args = GetArgs(json_path)
 
     train_material_stage(args)

@@ -1,11 +1,11 @@
 """
 MRF modules for MARCFusion.
 
-This file implements two independent material-aware reliability-consistency
+This file implements two independent material-aware reliability-contrast
 fusion modules:
 
 1. LowFrequencyMRF:
-   Material-guided consistency fusion for low-frequency features.
+   Material-guided contrast fusion for low-frequency features.
 
 2. HighFrequencyMRF:
    Material-guided reliability selection for high-frequency features.
@@ -95,11 +95,11 @@ def resize_like(
 
 class LowFrequencyMRF(nn.Module):
     """
-    Low-frequency material-aware consistency fusion module.
+    Low-frequency material-aware contrast fusion module.
 
     Low-frequency features usually contain region structure, object contour,
     background intensity and material base information. Therefore, this module
-    uses a material-guided consistency factor to control the interaction between
+    uses a material-guided Contrast factor to control the interaction between
     infrared and visible low-frequency features.
 
     Main idea:
@@ -113,7 +113,7 @@ class LowFrequencyMRF(nn.Module):
     Ablation:
         - use_material=False:
             z_m is not used.
-        - use_consistency=False:
+        - use_Contrast=False:
             alpha_l is fixed to 1, so the module only uses interactive fusion.
     """
 
@@ -123,7 +123,7 @@ class LowFrequencyMRF(nn.Module):
         material_channels: int = 64,
         hidden_channels: int = 64,
         use_material: bool = True,
-        use_consistency: bool = True,
+        use_contrast: bool = True,
         return_aux: bool = True,
     ) -> None:
         super().__init__()
@@ -132,7 +132,7 @@ class LowFrequencyMRF(nn.Module):
         self.material_channels = material_channels
         self.hidden_channels = hidden_channels
         self.use_material = use_material
-        self.use_consistency = use_consistency
+        self.use_contrast = use_contrast
         self.return_aux = return_aux
 
         # Project material prior to the same channel dimension as low features.
@@ -142,14 +142,14 @@ class LowFrequencyMRF(nn.Module):
                 nn.BatchNorm2d(feature_channels),
                 nn.PReLU(feature_channels),
             )
-            consistency_in_channels = feature_channels * 4
+            contrast_in_channels = feature_channels * 4
         else:
             self.material_proj = None
-            consistency_in_channels = feature_channels * 3
+            contrast_in_channels = feature_channels * 3
 
-        # Estimate low-frequency cross-modal consistency factor alpha_l.
-        self.consistency_estimator = nn.Sequential(
-            ConvBNPReLU(consistency_in_channels, hidden_channels, kernel_size=3, padding=1),
+        # Estimate low-frequency cross-modal contrast factor alpha_l.
+        self.contrast_estimator = nn.Sequential(
+            ConvBNPReLU(contrast_in_channels, hidden_channels, kernel_size=3, padding=1),
             nn.Conv2d(hidden_channels, feature_channels, kernel_size=1, bias=True),
             nn.Sigmoid(),
         )
@@ -171,7 +171,7 @@ class LowFrequencyMRF(nn.Module):
             nn.PReLU(feature_channels),
         )
 
-        # Final refinement after consistency-controlled fusion.
+        # Final refinement after contrast-controlled fusion.
         self.refine = nn.Sequential(
             ConvBNPReLU(feature_channels, feature_channels, kernel_size=3, padding=1),
             nn.Conv2d(feature_channels, feature_channels, kernel_size=1, bias=False),
@@ -201,7 +201,7 @@ class LowFrequencyMRF(nn.Module):
             low_fused:
                 [B, C, H, W]
             aux:
-                Dictionary containing consistency map and intermediate features.
+                Dictionary containing contrast map and intermediate features.
         """
         if low_ir.shape != low_vis.shape:
             raise ValueError(
@@ -229,31 +229,46 @@ class LowFrequencyMRF(nn.Module):
 
         # Stable base feature.
 
-        # base = self.base_branch(torch.cat([low_ir, low_vis], dim=1))
+        # base = self.base_branch(torch.cat([low_vis, low_ir], dim=1))
         # 0521实验
-        base = self.base_branch(torch.cat([low_vis, low_vis], dim=1))
+        # base = self.base_branch(torch.cat([low_vis, low_vis], dim=1))
 
-        # Material-guided consistency estimation.
+        #0727实验
+        # low-frequency IR injection test
+        lambda_ir = 0.25
+
+        low_base_input = torch.cat(
+            [
+                low_vis,
+                (1 - lambda_ir) * low_vis + lambda_ir * low_ir
+
+            ],
+            dim=1
+        )
+
+        base = self.base_branch(low_base_input)
+
+        # Material-guided contrast estimation.
         material_feat: Optional[torch.Tensor] = None
         if self.use_material:
             material_feat = resize_like(z_m, low_ir)
             material_feat = self.material_proj(material_feat)
-            consistency_input = torch.cat([low_ir, low_vis, diff, material_feat], dim=1)
+            contrast_input = torch.cat([low_ir, low_vis, diff, material_feat], dim=1)
         else:
-            consistency_input = torch.cat([low_ir, low_vis, diff], dim=1)
+            contrast_input = torch.cat([low_ir, low_vis, diff], dim=1)
 
-        if self.use_consistency:
-            consistency = self.consistency_estimator(consistency_input)
+        if self.use_contrast:
+            contrast = self.contrast_estimator(contrast_input)
         else:
-            consistency = torch.ones_like(low_ir)
+            contrast = torch.ones_like(low_ir)
 
-        low_fused_raw = consistency * interactive + (1.0 - consistency) * base
+        low_fused_raw = contrast * interactive + (1.0 - contrast) * base
         low_fused = self.out_act(self.refine(low_fused_raw) + low_fused_raw)
 
         aux: Dict[str, Optional[torch.Tensor]] = {}
         if return_aux:
             aux = {
-                "low_consistency": consistency,
+                "low_contrast": contrast,
                 "low_interactive": interactive,
                 "low_base": base,
                 "low_material_feat": material_feat,
@@ -261,6 +276,60 @@ class LowFrequencyMRF(nn.Module):
             }
 
         return low_fused, aux
+
+
+class HighFrequencyComplementResidual(nn.Module):
+    """Lightweight complement executor for reliability-weighted high features.
+
+    The output projection is zero-initialized, so loading an old T8 checkpoint
+    starts from the exact original high-frequency path. The caller applies a
+    source-envelope bound before adding this residual to the convex mixture.
+    """
+
+    def __init__(self, high_channels: int) -> None:
+        super().__init__()
+
+        input_channels = high_channels * 3
+
+        self.depthwise = nn.Conv2d(
+            input_channels,
+            input_channels,
+            kernel_size=3,
+            padding=1,
+            groups=input_channels,
+            bias=False,
+        )
+        self.reduce = nn.Conv2d(
+            input_channels,
+            high_channels,
+            kernel_size=1,
+            bias=False,
+        )
+        self.act = nn.PReLU(high_channels)
+        self.spatial = nn.Conv2d(
+            high_channels,
+            high_channels,
+            kernel_size=3,
+            padding=1,
+            groups=high_channels,
+            bias=False,
+        )
+        self.project = nn.Conv2d(
+            high_channels,
+            high_channels,
+            kernel_size=1,
+            bias=True,
+        )
+
+        nn.init.zeros_(self.project.weight)
+        nn.init.zeros_(self.project.bias)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.depthwise(x)
+        x = self.reduce(x)
+        x = self.act(x)
+        x = self.spatial(x)
+        return self.project(x)
 
 
 class HighFrequencyMRF(nn.Module):
@@ -292,6 +361,8 @@ class HighFrequencyMRF(nn.Module):
         use_material: bool = True,
         use_reliability: bool = True,
         return_aux: bool = True,
+        use_complement_residual: bool = False,
+        complement_residual_scale: float = 0.15,
     ) -> None:
         super().__init__()
 
@@ -302,6 +373,11 @@ class HighFrequencyMRF(nn.Module):
         self.use_material = use_material
         self.use_reliability = use_reliability
         self.return_aux = return_aux
+        self.use_complement_residual = use_complement_residual
+        self.complement_residual_scale = float(complement_residual_scale)
+
+        if self.complement_residual_scale < 0.0:
+            raise ValueError("complement_residual_scale must be non-negative.")
 
         # Project material prior to high-frequency channel dimension.
         if use_material:
@@ -323,6 +399,15 @@ class HighFrequencyMRF(nn.Module):
             ConvBNPReLU(hidden_channels, hidden_channels, kernel_size=3, padding=1),
             nn.Conv2d(hidden_channels, self.high_channels * 2, kernel_size=1, bias=True),
         )
+
+        # Complement branch is disabled by default, preserving the old interface
+        # and the exact old forward path for existing configurations.
+        if self.use_complement_residual:
+            self.complement_residual = HighFrequencyComplementResidual(
+                high_channels=self.high_channels,
+            )
+        else:
+            self.complement_residual = None
 
         # Optional refinement after reliability-weighted high-frequency selection.
         self.refine = nn.Sequential(
@@ -396,8 +481,49 @@ class HighFrequencyMRF(nn.Module):
             w_ir = torch.full_like(high_ir, 0.5)
             w_vis = torch.full_like(high_vis, 0.5)
 
-        high_fused_raw = w_ir * high_ir + w_vis * high_vis
-        high_fused = self.out_act(self.refine(high_fused_raw) + high_fused_raw)
+        weighted_ir = w_ir * high_ir
+        weighted_vis = w_vis * high_vis
+
+        # Original reliability-controlled convex path.
+        high_fused_raw = weighted_ir + weighted_vis
+
+        # The envelope is detached because it limits execution amplitude rather
+        # than training the source branches toward larger feature magnitudes.
+        high_envelope = torch.maximum(
+            torch.abs(high_ir),
+            torch.abs(high_vis),
+        ).detach()
+
+        if self.complement_residual is not None:
+            complement_input = torch.cat(
+                [
+                    weighted_ir,
+                    weighted_vis,
+                    torch.abs(high_ir - high_vis),
+                ],
+                dim=1,
+            )
+            complement_raw = self.complement_residual(complement_input)
+            high_complement_residual = (
+                self.complement_residual_scale
+                * high_envelope
+                * torch.tanh(complement_raw)
+            )
+        else:
+            high_complement_residual = torch.zeros_like(high_fused_raw)
+
+        high_fused_with_complement = (
+            high_fused_raw + high_complement_residual
+        )
+        high_fused = self.out_act(
+            self.refine(high_fused_with_complement)
+            + high_fused_with_complement
+        )
+
+        high_complement_ratio = (
+            high_complement_residual.abs().mean()
+            / (high_envelope.mean() + 1e-6)
+        )
 
         aux: Dict[str, Optional[torch.Tensor]] = {}
         if return_aux:
@@ -406,6 +532,12 @@ class HighFrequencyMRF(nn.Module):
                 "high_reliability_vis": w_vis,
                 "high_material_feat": material_feat,
                 "high_fused_raw": high_fused_raw,
+                "high_fused_with_complement": high_fused_with_complement,
+                "high_complement_residual": high_complement_residual,
+                "high_complement_ratio": high_complement_ratio,
+                "high_complement_abs_mean": (
+                    high_complement_residual.abs().mean()
+                ),
             }
 
         return high_fused, aux
@@ -427,9 +559,11 @@ class MaterialAwareMRF(nn.Module):
         use_material: bool = True,
         use_low_mrf: bool = True,
         use_high_mrf: bool = True,
-        use_low_consistency: bool = True,
+        use_low_contrast: bool = True,
         use_high_reliability: bool = True,
         return_aux: bool = True,
+        use_high_complement_residual: bool = False,
+        high_complement_residual_scale: float = 0.15,
     ) -> None:
         super().__init__()
 
@@ -443,7 +577,7 @@ class MaterialAwareMRF(nn.Module):
             material_channels=material_channels,
             hidden_channels=hidden_channels,
             use_material=use_material,
-            use_consistency=use_low_consistency,
+            use_contrast=use_low_contrast,
             return_aux=return_aux,
         )
 
@@ -454,6 +588,8 @@ class MaterialAwareMRF(nn.Module):
             use_material=use_material,
             use_reliability=use_high_reliability,
             return_aux=return_aux,
+            use_complement_residual=use_high_complement_residual,
+            complement_residual_scale=high_complement_residual_scale,
         )
 
     def forward(
@@ -517,6 +653,51 @@ class MaterialAwareMRF(nn.Module):
 
         return low_fused, high_fused, aux
 
+
+# if __name__ == "__main__":
+#     # Quick shape test.
+#     B, C = 2, 64
+#     H_low, W_low = 64, 64
+#     H_high, W_high = 64, 64
+#
+#     low_ir = torch.randn(B, C, H_low, W_low)
+#     low_vis = torch.randn(B, C, H_low, W_low)
+#
+#     high_ir = torch.randn(B, 3 * C, H_high, W_high)
+#     high_vis = torch.randn(B, 3 * C, H_high, W_high)
+#
+#     z_m = torch.randn(B, C, 128, 128)
+#
+#     mrf = MaterialAwareMRF(
+#         feature_channels=C,
+#         material_channels=C,
+#         hidden_channels=64,
+#         use_material=True,
+#         use_low_mrf=True,
+#         use_high_mrf=True,
+#         use_low_contrast=True,
+#         use_high_reliability=True,
+#         return_aux=True,
+#     )
+#
+#     low_fused, high_fused, aux = mrf(
+#         low_ir=low_ir,
+#         low_vis=low_vis,
+#         high_ir=high_ir,
+#         high_vis=high_vis,
+#         z_m=z_m,
+#     )
+#
+#     print("low_fused:", tuple(low_fused.shape))
+#     print("high_fused:", tuple(high_fused.shape))
+#
+#     print("\nLow aux:")
+#     for k, v in aux["low"].items():
+#         print(k, None if v is None else tuple(v.shape))
+#
+#     print("\nHigh aux:")
+#     for k, v in aux["high"].items():
+#         print(k, None if v is None else tuple(v.shape))
 
 if __name__ == "__main__":
     import gc
@@ -615,7 +796,7 @@ if __name__ == "__main__":
         use_material=True,
         use_low_mrf=True,
         use_high_mrf=True,
-        use_low_consistency=True,
+        use_low_contrast=True,
         use_high_reliability=True,
         return_aux=True,
     ).to(device)
@@ -774,8 +955,8 @@ if __name__ == "__main__":
             "z_input": z_m,
         },
         {
-            "name": "w/o low consistency",
-            "kwargs": dict(use_low_consistency=False),
+            "name": "w/o low contrast",
+            "kwargs": dict(use_low_contrast=False),
             "z_input": z_m,
         },
         {
@@ -793,7 +974,7 @@ if __name__ == "__main__":
             use_material=True,
             use_low_mrf=True,
             use_high_mrf=True,
-            use_low_consistency=True,
+            use_low_contrast=True,
             use_high_reliability=True,
             return_aux=False,
         )

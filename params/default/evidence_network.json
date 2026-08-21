@@ -1,5 +1,5 @@
 {
-  "save_weight_path": "./weights/fusion_weights.pth",
+  "save_weight_path": "./weights/contrast_weights.pth",
 
   "in_channels": 1,
   "out_channels": 1,
@@ -18,14 +18,14 @@
   "mrf_hidden_channels": 64,
   "use_low_mrf": true,
   "use_high_mrf": true,
-  "use_low_contrast": true,
+  "use_low_consistency": true,
   "use_high_reliability": true,
 
   "return_aux": true,
   "return_reconstruction": true,
-  "default_stage": "pretrain_material",
+  "default_stage": "contrast",
 
-  "freeze_material_in_fusion": false,
+  "freeze_material_in_contrast": false,
 
   "test_batch_size": 2,
   "test_height": 128,

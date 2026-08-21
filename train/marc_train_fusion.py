@@ -24,6 +24,28 @@ from utils.loss_visual import AverageMeter, tensor_to_float, save_loss_history_c
 
 matplotlib.use("Agg")
 
+class GetArgs:
+
+
+    def __init__(self, json_path: str):
+        with open(json_path, "r", encoding="utf-8") as f:
+            test_args = json.load(f)
+
+        network_config_path = test_args.get("network_config_path", "")
+
+        merged_args = {}
+
+        if network_config_path:
+            with open(network_config_path, "r", encoding="utf-8") as f:
+                network_args = json.load(f)
+
+            merged_args.update(network_args)
+
+        merged_args.update(test_args)
+
+        self.__dict__.update(merged_args)
+
+
 def get_arg(args, name: str, default: Any):
     if args is None:
         return default
@@ -390,12 +412,12 @@ def feature_to_heatmap(feat: torch.Tensor, index: int = 0) -> np.ndarray:
     return heatmap_rgb
 
 
-def get_low_consistency_map(outputs: Dict[str, torch.Tensor]) -> Optional[torch.Tensor]:
+def get_low_contrast_map(outputs: Dict[str, torch.Tensor]) -> Optional[torch.Tensor]:
     """
     从 outputs 中取低频一致性因子 C。
 
     期望位置：
-        outputs["mrf_aux"]["low"]["low_consistency"]
+        outputs["mrf_aux"]["low"]["low_contrast"]
 
     返回：
         C: [B, C, H, W]
@@ -410,7 +432,7 @@ def get_low_consistency_map(outputs: Dict[str, torch.Tensor]) -> Optional[torch.
     if not low_aux:
         return None
 
-    return low_aux.get("low_consistency", None)
+    return low_aux.get("low_contrast", None)
 
 
 def get_high_reliability_map(outputs: Dict[str, torch.Tensor]) -> Optional[torch.Tensor]:
@@ -507,7 +529,7 @@ def save_fusion_visualization(
             热发射偏向材质响应
 
         C:
-            低频一致性因子 low_consistency
+            低频一致性因子 low_contrast
 
         Qir:
             红外高频可靠性图 high_reliability_ir
@@ -534,7 +556,7 @@ def save_fusion_visualization(
     # -----------------------------
     # 2. MRF 中的 C、Qir、Qvis
     # -----------------------------
-    c_map = get_low_consistency_map(outputs)
+    c_map = get_low_contrast_map(outputs)
     q_ir_map, q_vis_map = get_high_reliability_maps(outputs)
 
     b = min(ir.shape[0], max_items)
@@ -578,7 +600,7 @@ def save_fusion_visualization(
             labels.append("z_e")
 
         # -----------------------------
-        # C: low consistency
+        # C: low contrast
         # -----------------------------
         if c_map is not None:
             c_img = feature_to_heatmap(c_map, index=i)
@@ -1295,6 +1317,6 @@ def train_fusion_stage(args):
 if __name__ == "__main__":
     json_path = "../params/default/train_fusion.json"
 
-    args = get_arg(json_path)
+    args = GetArgs(json_path)
 
     train_fusion_stage(args)

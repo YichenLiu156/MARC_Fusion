@@ -11,7 +11,7 @@ from model.marc_backbone import FDEncoder, FDDecoder, OutputLayers
 from model.material_module import MaterialPriorExtractor
 from model.mrc_module import MaterialAwareMRF
 
-
+from utils.get_args import GetArgs
 
 
 def get_arg(args, name: str, default: Any):
@@ -27,7 +27,7 @@ def get_arg(args, name: str, default: Any):
 
 class MARCFusionNet(nn.Module):
     """
-    Material-aware Reliability-Consistency Fusion Network.
+    Material-aware Reliability-Contrast Fusion Network.
 
     整体流程：
 
@@ -102,7 +102,7 @@ class MARCFusionNet(nn.Module):
 
         self.use_low_mrf = get_arg(args, "use_low_mrf", True)
         self.use_high_mrf = get_arg(args, "use_high_mrf", True)
-        self.use_low_consistency = get_arg(args, "use_low_consistency", True)
+        self.use_low_contrast = get_arg(args, "use_low_contrast", True)
         self.use_high_reliability = get_arg(args, "use_high_reliability", True)
 
         # -----------------------------
@@ -162,9 +162,19 @@ class MARCFusionNet(nn.Module):
             use_material=self.use_material,
             use_low_mrf=self.use_low_mrf,
             use_high_mrf=self.use_high_mrf,
-            use_low_consistency=self.use_low_consistency,
+            use_low_contrast=self.use_low_contrast,
             use_high_reliability=self.use_high_reliability,
             return_aux=self.return_aux_default,
+            use_high_complement_residual=get_arg(
+                args,
+                "use_high_complement_residual",
+                False,
+            ),
+            high_complement_residual_scale=get_arg(
+                args,
+                "high_complement_residual_scale",
+                0.15,
+            ),
         )
 
         # -----------------------------
@@ -182,6 +192,71 @@ class MARCFusionNet(nn.Module):
             output_high_scale=get_arg(args, "output_high_scale", 0.5),
             limit_output_high=get_arg(args, "limit_output_high", True),
             use_output_bn=get_arg(args, "use_output_bn", False),
+            use_output_calibration=get_arg(
+                args,
+                "use_output_calibration",
+                False,
+            ),
+            output_calibration_gain_range=get_arg(
+                args,
+                "output_calibration_gain_range",
+                0.35,
+            ),
+            output_calibration_bias_range=get_arg(
+                args,
+                "output_calibration_bias_range",
+                0.05,
+            ),
+            output_calibration_center=get_arg(
+                args,
+                "output_calibration_center",
+                0.5,
+            ),
+            use_output_residual_refiner=get_arg(
+                args,
+                "use_output_residual_refiner",
+                False,
+            ),
+            output_residual_context_channels=get_arg(
+                args,
+                "output_residual_context_channels",
+                8,
+            ),
+            output_residual_hidden_channels=get_arg(
+                args,
+                "output_residual_hidden_channels",
+                16,
+            ),
+            output_residual_mid_inner_kernel=get_arg(
+                args,
+                "output_residual_mid_inner_kernel",
+                3,
+            ),
+            output_residual_outer_kernel=get_arg(
+                args,
+                "output_residual_outer_kernel",
+                15,
+            ),
+            output_residual_detail_scale=get_arg(
+                args,
+                "output_residual_detail_scale",
+                0.25,
+            ),
+            output_residual_mid_scale=get_arg(
+                args,
+                "output_residual_mid_scale",
+                0.10,
+            ),
+            output_residual_contrast_scale=get_arg(
+                args,
+                "output_residual_contrast_scale",
+                0.05,
+            ),
+            output_residual_init_std=get_arg(
+                args,
+                "output_residual_init_std",
+                1e-3,
+            ),
         )
 
     # =========================================================
@@ -498,12 +573,99 @@ class MARCFusionNet(nn.Module):
             high_fused=high_fused,
         )
 
+        fused_pack = fused_out["fused"]
+        high_aux = mrf_aux.get("high", {}) if isinstance(mrf_aux, dict) else {}
+
         outputs = {
             "stage": "fusion",
 
-            "fused": fused_out["fused"]["image"],
-            "fused_low": fused_out["fused"]["low"],
-            "fused_high": fused_out["fused"]["high"],
+            "fused": fused_pack["image"],
+            "fused_base": fused_pack.get(
+                "base_image",
+                fused_pack["image"],
+            ),
+            "fused_low": fused_pack["low"],
+            "fused_high": fused_pack["high"],
+            "fused_pre_calibration": fused_pack.get(
+                "pre_calibration_image",
+                fused_pack["image"],
+            ),
+            "output_residual": fused_pack.get(
+                "output_residual",
+                torch.zeros_like(fused_pack["image"]),
+            ),
+            "output_residual_logit": fused_pack.get(
+                "output_residual_logit",
+                torch.zeros_like(fused_pack["image"]),
+            ),
+            "output_residual_detail": fused_pack.get(
+                "output_residual_detail",
+                torch.zeros_like(fused_pack["image"]),
+            ),
+            "output_residual_mid": fused_pack.get(
+                "output_residual_mid",
+                torch.zeros_like(fused_pack["image"]),
+            ),
+            "output_residual_contrast": fused_pack.get(
+                "output_residual_contrast",
+                torch.zeros_like(fused_pack["image"]),
+            ),
+            "output_residual_ratio": fused_pack.get(
+                "output_residual_ratio",
+                fused_pack["image"].new_zeros([]),
+            ),
+            "output_residual_logit_ratio": fused_pack.get(
+                "output_residual_logit_ratio",
+                fused_pack["image"].new_zeros([]),
+            ),
+            "output_residual_abs_mean": fused_pack.get(
+                "output_residual_abs_mean",
+                fused_pack["image"].new_zeros([]),
+            ),
+            "output_residual_logit_abs_mean": fused_pack.get(
+                "output_residual_logit_abs_mean",
+                fused_pack["image"].new_zeros([]),
+            ),
+            "output_residual_detail_ratio": fused_pack.get(
+                "output_residual_detail_ratio",
+                fused_pack["image"].new_zeros([]),
+            ),
+            "output_residual_mid_ratio": fused_pack.get(
+                "output_residual_mid_ratio",
+                fused_pack["image"].new_zeros([]),
+            ),
+            "output_residual_contrast_ratio": fused_pack.get(
+                "output_residual_contrast_ratio",
+                fused_pack["image"].new_zeros([]),
+            ),
+            "output_residual_detail_abs_mean": fused_pack.get(
+                "output_residual_detail_abs_mean",
+                fused_pack["image"].new_zeros([]),
+            ),
+            "output_residual_mid_abs_mean": fused_pack.get(
+                "output_residual_mid_abs_mean",
+                fused_pack["image"].new_zeros([]),
+            ),
+            "output_residual_contrast_abs_mean": fused_pack.get(
+                "output_residual_contrast_abs_mean",
+                fused_pack["image"].new_zeros([]),
+            ),
+            "calibration_gain": fused_pack.get(
+                "calibration_gain",
+                fused_pack["image"].new_ones([]),
+            ),
+            "calibration_bias": fused_pack.get(
+                "calibration_bias",
+                fused_pack["image"].new_zeros([]),
+            ),
+            "high_complement_ratio": high_aux.get(
+                "high_complement_ratio",
+                fused_pack["image"].new_zeros([]),
+            ),
+            "high_complement_abs_mean": high_aux.get(
+                "high_complement_abs_mean",
+                fused_pack["image"].new_zeros([]),
+            ),
 
             # z_m 是干预后的材质先验。
             # 当 material_intervention="zero" 时，这里就是全零。
@@ -586,13 +748,12 @@ class MARCFusionNet(nn.Module):
         if return_reconstruction is None:
             return_reconstruction = self.return_reconstruction_default
 
-        if stage in {"fusion", "train_fusion", "test"}:
-            return self.forward_fusion(
+        if stage in {"pretrain", "pretrain_material", "material"}:
+            return self.forward_pretrain_material(
                 ir=ir,
                 vis=vis,
                 return_aux=return_aux,
-                return_reconstruction=return_reconstruction,
-                material_intervention=material_intervention,
+                return_wavelet_detail=return_wavelet_detail,
             )
 
         if stage in {"fusion", "train_fusion", "test"}:
@@ -601,6 +762,7 @@ class MARCFusionNet(nn.Module):
                 vis=vis,
                 return_aux=return_aux,
                 return_reconstruction=return_reconstruction,
+                material_intervention=material_intervention,
             )
 
         raise ValueError(
@@ -682,7 +844,7 @@ if __name__ == "__main__":
     json_path = "../params_marc/default/fusion_network.json"
 
     if os.path.exists(json_path):
-        args = get_arg(json_path)
+        args = GetArgs(json_path)
         print(f"Loaded config from: {json_path}")
     else:
         args = None

@@ -16,7 +16,7 @@
   "pretrained_material_weight_path": "",
   "resume_fusion_weight_path": "",
 
-  "fusion_epochs": 50,
+  "fusion_epochs": 150,
   "lr": 0.00002,
   "weight_decay": 0.0,
 

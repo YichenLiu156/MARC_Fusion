@@ -13,31 +13,11 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
 from model.marc_fusion_net import MARCFusionNet
-
+from utils.get_args import GetArgs
 
 FEATURE_KEYS = ["zr", "ze", "c", "qir", "qvis"]
 
 
-class GetArgs:
-
-
-    def __init__(self, json_path: str):
-        with open(json_path, "r", encoding="utf-8") as f:
-            test_args = json.load(f)
-
-        network_config_path = test_args.get("network_config_path", "")
-
-        merged_args = {}
-
-        if network_config_path:
-            with open(network_config_path, "r", encoding="utf-8") as f:
-                network_args = json.load(f)
-
-            merged_args.update(network_args)
-
-        merged_args.update(test_args)
-
-        self.__dict__.update(merged_args)
 
 
 def get_arg(args, name: str, default: Any):

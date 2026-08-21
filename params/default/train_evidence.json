@@ -2,7 +2,7 @@
   "network_config_path": "../params_marc/default/fusion_network.json",
 
   "train_ir_dir": "../datasets/train_data/ir",
-  "train_vis_dir": "../datasets/train_data/vis",
+  "train_vis_dir": "../datasets/train_data/vi",
   "train_list": "",
 
   "use_random_crop": true,
