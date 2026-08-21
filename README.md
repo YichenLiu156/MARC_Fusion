@@ -152,7 +152,7 @@ The test configuration should contain:
 
 ```json
 {
-  "fusion_weight_path": "./weights/weights_marc_fusion_best.pth"
+  "fusion_weight_path": "./weights/marc_fusion_best.pth"
 }
 ```
 
@@ -160,7 +160,7 @@ Load the released weight with:
 
 ```python
 state_dict = torch.load(
-    "./weights/weights_marc_fusion_best.pth",
+    "./weights/marc_fusion_best.pth",
     map_location="cpu",
     weights_only=True,
 )
